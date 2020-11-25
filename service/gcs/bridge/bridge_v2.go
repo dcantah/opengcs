@@ -472,6 +472,7 @@ func (b *Bridge) modifySettingsV2(r *Request) (_ RequestResponse, err error) {
 	defer span.End()
 	defer func() { oc.SetSpanStatus(span, err) }()
 	span.AddAttributes(trace.StringAttribute("cid", r.ContainerID))
+	t := time.Now()
 
 	request, err := prot.UnmarshalContainerModifySettings(r.Message)
 	if err != nil {
@@ -486,7 +487,7 @@ func (b *Bridge) modifySettingsV2(r *Request) (_ RequestResponse, err error) {
 	if err != nil {
 		return nil, err
 	}
-
+	log.G(ctx).WithField("Time3", time.Since(t)).Debug("Time for removing sandbox user mounts")
 	return &prot.MessageResponseBase{}, nil
 }
 
@@ -503,6 +504,7 @@ func (b *Bridge) dumpStacksV2(r *Request) (_ RequestResponse, err error) {
 }
 
 func (b *Bridge) deleteContainerStateV2(r *Request) (_ RequestResponse, err error) {
+	t := time.Now()
 	ctx, span := trace.StartSpan(r.Context, "opengcs::bridge::deleteContainerStateV2")
 	defer span.End()
 	defer func() { oc.SetSpanStatus(span, err) }()
@@ -524,6 +526,7 @@ func (b *Bridge) deleteContainerStateV2(r *Request) (_ RequestResponse, err erro
 	}
 
 	b.hostState.RemoveContainer(request.ContainerID)
+	log.G(ctx).WithField("Time3", time.Since(t)).Debug("Time for deleting container state")
 	return &prot.MessageResponseBase{}, nil
 }
 

@@ -6,6 +6,7 @@ import (
 	"context"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/Microsoft/opengcs/internal/log"
 	"github.com/Microsoft/opengcs/internal/storage"
@@ -111,20 +112,24 @@ func (c *Container) GetAllProcessPids(ctx context.Context) ([]int, error) {
 
 // Kill sends 'signal' to the container process.
 func (c *Container) Kill(ctx context.Context, signal syscall.Signal) error {
+	t := time.Now()
 	err := c.container.Kill(signal)
 	if err != nil {
 		return err
 	}
 	c.setExitType(signal)
+	log.G(ctx).WithField("Time3", time.Since(t)).Debug("Time for container kill")
 	return nil
 }
 
 func (c *Container) Delete(ctx context.Context) error {
 	if c.isSandbox {
+		t := time.Now()
 		// remove user mounts in sandbox container
 		if err := storage.UnmountAllInPath(ctx, getSandboxMountsDir(c.id), true); err != nil {
 			log.G(ctx).WithError(err).Error("failed to unmount sandbox mounts")
 		}
+		log.G(ctx).WithField("Time3", time.Since(t)).Debug("Time for removing sandbox user mounts")
 	}
 	return c.container.Delete()
 }

@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -333,7 +334,13 @@ func modifyMappedVirtualDisk(ctx context.Context, rt prot.ModifyRequestType, mvd
 		return nil
 	case prot.MreqtRemove:
 		if mvd.MountPath != "" {
+			t := time.Now()
 			if err := storage.UnmountPath(ctx, mvd.MountPath, true); err != nil {
+				return err
+			}
+			scsiMsg := fmt.Sprintf("Time for scsi unmount: %s", time.Since(t).String())
+			since := []byte(scsiMsg)
+			if err := ioutil.WriteFile("/dev/kmsg", since, 0644); err != nil {
 				return err
 			}
 		}

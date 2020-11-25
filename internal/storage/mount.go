@@ -9,7 +9,9 @@ import (
 	"os"
 	"strings"
 	"syscall"
+	"time"
 
+	"github.com/Microsoft/opengcs/internal/log"
 	"github.com/Microsoft/opengcs/internal/oc"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
@@ -61,6 +63,7 @@ func UnmountPath(ctx context.Context, target string, removeTarget bool) (err err
 		return errors.Wrapf(err, "failed to determine if path '%s' exists", target)
 	}
 
+	t := time.Now()
 	if err := unixUnmount(target, 0); err != nil {
 		// If `Unmount` returns `EINVAL` it's not mounted. Just delete the
 		// folder.
@@ -68,8 +71,16 @@ func UnmountPath(ctx context.Context, target string, removeTarget bool) (err err
 			return errors.Wrapf(err, "failed to unmount path '%s'", target)
 		}
 	}
+	log.G(ctx).WithField("Time3", time.Since(t)).Debug("Time for Unmount")
+
 	if removeTarget {
-		return osRemoveAll(target)
+		t := time.Now()
+		err := osRemoveAll(target)
+		if err != nil {
+			return err
+		}
+		log.G(ctx).WithField("Time3", time.Since(t)).Debug("Time for RemoveAll")
+		return nil
 	}
 	return nil
 }

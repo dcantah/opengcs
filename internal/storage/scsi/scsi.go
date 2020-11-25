@@ -111,7 +111,7 @@ func ControllerLunToName(ctx context.Context, controller, lun uint8) (_ string, 
 				time.Sleep(time.Millisecond * 10)
 				continue
 			}
-		} 
+		}
 		break
 	}
 
@@ -141,6 +141,7 @@ func UnplugDevice(ctx context.Context, controller, lun uint8) (err error) {
 		trace.Int64Attribute("lun", int64(lun)))
 
 	scsiID := fmt.Sprintf("0:0:%d:%d", controller, lun)
+	t := time.Now()
 	f, err := os.OpenFile(filepath.Join("/sys/bus/scsi/devices", scsiID, "delete"), os.O_WRONLY, 0644)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -148,10 +149,18 @@ func UnplugDevice(ctx context.Context, controller, lun uint8) (err error) {
 		}
 		return err
 	}
+	log.G(ctx).WithField("Time3", time.Since(t)).Debug("Time for opening scsi device file")
 	defer f.Close()
 
+	t = time.Now()
 	if _, err := f.Write([]byte("1\n")); err != nil {
 		return err
 	}
+	scsiMsg := fmt.Sprintf("Time for scsi unplug: %s", time.Since(t).String())
+	since := []byte(scsiMsg)
+	if err := ioutil.WriteFile("/dev/kmsg", since, 0644); err != nil {
+		return err
+	}
+	log.G(ctx).WithField("Time3", time.Since(t)).Debug("Time for writing to scsi device file")
 	return nil
 }
